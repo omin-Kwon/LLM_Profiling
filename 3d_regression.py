@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.preprocessing import PolynomialFeatures
 from mpl_toolkits.mplot3d import Axes3D
 
 def try_models(data):
@@ -40,6 +39,9 @@ def try_models(data):
     # Plot the model results
     plot_model_with_plane("Linear", x1, x2, y, y_pred, mse, r2, "Linear_regression_with_plane.png", model)
     plot_model_without_plane("Linear", x1, x2, y, "Linear_regression_without_plane.png")
+    
+    
+    print("Data points: ", len(data['y']))
 
     return {
         'name': "Linear",
@@ -85,9 +87,9 @@ def plot_model_with_plane(model_name, x1, x2, y_actual, y_pred, mse, r2, filenam
 
     # Labels and title
     ax.set_title("Multivariable Regression: Decoding Latency")
-    ax.set_xlabel("Batch Size")
-    ax.set_ylabel("KV Cache Size")
-    ax.set_zlabel("Decoding Latency")
+    ax.set_xlabel("Batch Size (x1)")
+    ax.set_ylabel("KV Cache Size (x2)")
+    ax.set_zlabel("Decoding Latency (y)")
 
     # Add metrics text box
     textstr = f"MSE: {mse:.4f}\nR^2: {r2:.4f}"
@@ -121,9 +123,9 @@ def plot_model_without_plane(model_name, x1, x2, y_actual, filename):
 
     # Labels and title
     ax.set_title("Multivariable Regression: Decoding Latency (Data Points Only)")
-    ax.set_xlabel("Batch Size")
-    ax.set_ylabel("KV Cache Size")
-    ax.set_zlabel("Decoding Latency")
+    ax.set_xlabel("Batch Size (x1)")
+    ax.set_ylabel("KV Cache Size (x2)")
+    ax.set_zlabel("Decoding Latency (y)")
 
     plt.legend()
     plt.grid(True)
@@ -133,21 +135,95 @@ def plot_model_without_plane(model_name, x1, x2, y_actual, filename):
     print(f"Plot saved as {filename}")
     plt.close()
 
-# Example usage
+# Main execution with new data
 if __name__ == "__main__":
-    # Extended data with additional samples
-    data = {
-        'x1': [1, 2, 4, 8, 1, 2, 4, 8, 1, 2, 4, 8, 1, 2, 4],
-        'x2': [513, 1026, 2052, 4104, 1025, 2050, 4100, 8200, 2049, 4098, 8196, 16392, 4097, 8194, 16388],
-        'y': [16.715, 17.296, 17.467, 20.262, 17.285, 17.819, 18.673, 22.627,
-              18.024, 19.055, 21.078, 27.533, 19.304, 21.496, 27.519]
+    # 새 데이터: 각 리스트는 제공된 표의 각 열에 해당합니다.
+    memory_bound_data = {
+        'x1': [
+            1, 2, 4, 8, 16, 32, 48,
+            1, 2, 4, 8, 16, 32, 64, 96, 192,
+            1, 2, 4, 8, 16, 32, 64, 96, 192,
+            1, 2, 4, 8, 16, 32, 64, 96, 192,
+            1, 2, 4, 8, 16, 32, 64, 96, 192,
+            1, 2, 4, 8, 16, 32, 64, 96, 192,
+            1, 2, 4, 8, 16, 32, 64, 96, 192,
+            1, 2, 4, 8, 16, 32, 64, 96, 192
+        ],
+        'x2': [
+            4096, 8192, 16384, 32768, 65536, 131072, 196608,
+            2048, 4096, 8192, 16384, 32768, 65536, 131072, 196608, 393216,
+            1024, 2048, 4096, 8192, 16384, 32768, 65536, 98304, 2816.064,
+            512, 1024, 2048, 4096, 8192, 16384, 32768, 49152, 98304,
+            256, 512, 1024, 2048, 4096, 8192, 16384, 24576, 49152,
+            127, 254, 508, 1016, 2032, 4064, 8128, 12192, 24384,
+            63, 126, 252, 504, 1008, 2016, 4032, 6048, 12096,
+            31, 62, 124, 248, 496, 992, 1984, 2976, 5952
+        ],
+        'y': [
+            12.667, 13.582, 14.555, 16.537, 19.016, 26.034, 33.623,
+            12.17, 12.599, 13.455, 15.162, 16.384, 20.736, 28.777, 35.083, 50.875,
+            12.207, 12.375, 12.895, 14.07, 15.39, 17.41, 23.206, 27.456, 43.447,
+            11.755, 12.019, 12.483, 13.431, 14.407, 17.173, 21.055, 23.632, 35.834,
+            11.56, 11.864, 12.408, 12.891, 13.578, 16.281, 20.213, 22.689, 33.095,
+            11.57, 11.601, 12.422, 12.923, 13.108, 15.555, 19.711, 21.628, 35.023,
+            11.546, 11.64, 12.386, 12.781, 13.025, 15.423, 19.202, 22.164, 33.476,
+            11.485, 11.582, 12.222, 12.793, 12.976, 15.143, 19.361, 21.837, 33.337
+        ]
     }
+    
+    # 
+    compute_bound_data = {
+        'x1': [
+            256, 256, 256, 512, 512, 512,
+            1024, 1024, 1024, 2048, 2048, 2048,
+            4096, 4096, 4096
+        ],
+        'x2': [
+            4096, 8192, 16384, 8192, 16384, 32768,
+            16384, 32768, 65536, 32768, 65536, 131072,
+            65536, 131072, 196608
+        ],
+        'y': [
+            35.886, 36.099, 36.51, 63.774, 63.898, 64.371,
+            121.246, 121.448, 122.149, 229.209, 229.866, 231.411,
+            356.359, 357.363, 357.879
+        ]
+    }
+    
+    
+    # New Data
+    
+    compute_bound_data_kv_cache_less_than_16 = {
+    'x1': [
+        256, 256, 256, 256,
+        512, 512, 512, 512,
+        1024, 1024, 1024, 1024,
+        2048, 2048, 2048, 2048,
+        4096, 4096, 4096, 4096
+    ],
+    'x2': [
+        256, 512, 1024, 2048,
+        512, 1024, 2048, 4096,
+        1024, 2048, 4096, 8192,
+        2048, 4096, 8192, 16384,
+        4096, 8192, 16384, 32768
+    ],
+    'y': [
+        34.107, 34.139, 34.278, 34.668,
+        60.014, 60.113, 60.265, 60.947,
+        113.857, 113.742, 114.973, 115.392,
+        214.864, 215.671, 216.308, 218.423,
+        335.265, 335.227, 337.227, 339.963
+    ]
+    }
+    
+    
+    
 
-    # Try models
-    best_model = try_models(data)
+    # 모델 실행
+    best_model = try_models(compute_bound_data_kv_cache_less_than_16)
 
-    # Print best model details
-    print("Best Model:")
+    # 결과 출력
     print(f"  Name: {best_model['name']}")
     print(f"  MSE: {best_model['mse']:.4f}")
     print(f"  R^2: {best_model['r2']:.4f}")
